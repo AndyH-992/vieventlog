@@ -252,8 +252,9 @@
                 // Consumption
                 html += renderConsumption(keyFeatures);
 
+// moved to dashboard-render-consumption 
                 // Consumption/Production Statistics
-                html += renderConsumptionStatistics(keyFeatures);
+                // html += renderConsumptionStatistics(keyFeatures);
 
                 // Additional sensors & pumps
                 html += renderAdditionalSensors(keyFeatures);
@@ -445,6 +446,10 @@
                 compressorMotorTemp: find(['heating.compressors.0.sensors.temperature.motorChamber']),
                 compressorPressure: find(['heating.compressors.0.sensors.pressure.inlet']),
 
+                // Vitocal 200 A/S  Leistung, aktuelle Leistung in Prozent
+                compressorHeatPower: find(['heating.compressors.0.power']),
+                compressorHeatPercentPower: find(['heating.compressors.0.sensors.power']),
+
                 // Fallback features for Oplink devices (current consumption/production)
                 compressorPowerConsumptionCurrent: find(['heating.compressors.0.power.consumption.current']),
                 compressorHeatProductionCurrent: find(['heating.compressors.0.heat.production.current']),
@@ -479,6 +484,12 @@
                 pumpInternal: find(['heating.boiler.pumps.internal.current']),
                 fan0: find(['heating.primaryCircuit.fans.0.current']),
                 fan1: find(['heating.primaryCircuit.fans.1.current']),
+
+                // Heating circuits - circulation pumps
+                circuitPump0: findNested('heating.circuits.0.circulation.pump', 'status'),
+                circuitPump1: findNested('heating.circuits.1.circulation.pump', 'status'),
+                circuitPump2: findNested('heating.circuits.2.circulation.pump', 'status'),
+                circuitPump3: findNested('heating.circuits.3.circulation.pump', 'status'),
 
                 // Efficiency
                 // COP (Coefficient of Performance) features - primary source

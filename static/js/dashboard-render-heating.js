@@ -551,6 +551,14 @@
                     }
                 }
 
+
+                //  Vitocal 200 A/S Thermische Leistung
+                let compressorHeatingPower = kf.compressorHeatPower && kf.compressorHeatPower.value !== undefined ? kf.compressorHeatPower.value : -1;
+                let compressorHeatingNow = kf.compressorHeatPercentPower && kf.compressorHeatPercentPower.value !== undefined ? kf.compressorHeatPercentPower.value : -1;
+                if ((compressorHeatingPower != -1) && (compressorHeatingNow != -1)) {
+                    compressorHeatingNow = compressorHeatingPower * (compressorHeatingNow / 100);
+                }
+				
                 content = `
                     <div class="status-item">
                         <span class="status-label">Status</span>
@@ -576,7 +584,33 @@
                             })()}</span>
                         </div>
                     ` : ''}
-                    ${kf.compressorCurrent ? `
+
+					${kf.compressorHeatPower ? `
+                        <div class="status-item">
+                            <span class="status-label">therm. Leistung</span>
+                            <span class="status-value">${(() => {
+                                if (!isValidNumericValue(kf.compressorHeatPower)) return '--';
+                                if (!kf.compressorHeatPower.value) return '--';
+                                const powerW = unwrapValue(kf.compressorHeatPower.value);
+                                return formatNum(powerW, 0) + ' kW';
+                            })()}</span>
+                        </div>
+                    ` : ''}
+
+                    ${kf.compressorHeatPercentPower ? `
+                        <div class="status-item">
+                            <span class="status-label">aktuelle th. Leistung</span>
+                            <span class="status-value">${(() => {
+                                if (compressorHeatingNow == -1) return '--';
+                                return formatNum(compressorHeatingNow, 1) + ' kW';
+                            })()}</span>
+                        </div>
+                    ` : ''}
+					
+					
+					
+					
+					${kf.compressorCurrent ? `
                         <div class="status-item">
                             <span class="status-label">Stromaufnahme</span>
                             <span class="status-value">${isValidNumericValue(kf.compressorCurrent) ? formatValue(kf.compressorCurrent) : '--'}</span>
@@ -780,6 +814,7 @@
             const operatingProgram = find([`${circuitPrefix}.operating.programs.active`]);
             const circuitTemp = find([`${circuitPrefix}.sensors.temperature.supply`]);
             const roomTemp = find([`${circuitPrefix}.sensors.temperature.room`]);
+            const circuitPump = findNested(`${circuitPrefix}.circulation.pump`, 'status');
             const heatingCurveSlope = findNested(`${circuitPrefix}.heating.curve`, 'slope');
             const heatingCurveShift = findNested(`${circuitPrefix}.heating.curve`, 'shift');
             const supplyTempMax = findNested(`${circuitPrefix}.temperature.levels`, 'max');
@@ -1006,6 +1041,18 @@
                     <div class="status-item">
                         <span class="status-label">Raumtemperatur (Ist)</span>
                         <span class="status-value">${formatValue(roomTemp)}</span>
+                    </div>
+                `;
+            }
+
+            // Circulation pump status (only show if feature has status property)
+            if (circuitPump) {
+                const pumpStatus = circuitPump.value;
+                const statusDisplay = pumpStatus === 'on' ? '🔄 Ein' : (pumpStatus === 'off' ? '⚪ Aus' : pumpStatus);
+                html += `
+                    <div class="status-item">
+                        <span class="status-label">Umwälzpumpe</span>
+                        <span class="status-value">${statusDisplay}</span>
                     </div>
                 `;
             }
@@ -2758,13 +2805,15 @@
             if (!kf.deviceSerial && !kf.deviceType && !kf.deviceVariant && !kf.scop && !kf.compressorStats) return '';
 
             let info = '';
+            let devVariant = '';
 
             // Basic device info
             if (kf.deviceVariant) {
+                devVariant = kf.deviceVariant.value;
                 info += `
                     <div class="status-item">
                         <span class="status-label">Modell</span>
-                        <span class="status-value">${kf.deviceVariant.value}</span>
+                        <span class="status-value">${devVariant}</span>
                     </div>
                 `;
             }
@@ -2788,13 +2837,20 @@
             }
 
             if (kf.deviceWiFi) {
-                const wifiStrength = kf.deviceWiFi.value.strength.value - 20.0;
-                info += `
-                    <div class="status-item">
-                        <span class="status-label">WiFi Pegel</span>
-                        <span class="status-value" style="font-family: monospace;">${wifiStrength} dBm</span>
-                    </div>
-                `;
+                let wifiStrength = kf.deviceWiFi.value.strength.value;
+                // Only apply -20 dBm offset for Vitocal devices
+                if (devVariant && devVariant.toLowerCase().includes("vitocal")) {
+                    wifiStrength = wifiStrength - 20.0;
+                }
+                // Filter out invalid values (< -115 dBm is unrealistic for WiFi)
+                if (wifiStrength > -115) {
+                    info += `
+                        <div class="status-item">
+                            <span class="status-label">WiFi Pegel</span>
+                            <span class="status-value" style="font-family: monospace;">${wifiStrength} dBm</span>
+                        </div>
+                    `;
+                }
             }
 
             // JAZ / COP / SCOP / SPF values (Coefficient of Performance)
