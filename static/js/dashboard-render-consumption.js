@@ -933,7 +933,7 @@ function renderMonthlyChart(stats) {
         series: [
             { name: 'Stromverbrauch', type: 'bar', data: electricity, itemStyle: { color: '#ff6b6b' } },
             { name: 'Wärmeerzeugung', type: 'bar', data: thermal, itemStyle: { color: '#4ecdc4' } },
-            { name: 'ArbeitsZahl', type: 'line', yAxisIndex: 1, data: cop, itemStyle: { color: '#ffffff' } }
+            { name: 'ArbeitsZahl', type: 'line', yAxisIndex: 1, data: cop, itemStyle: { color: '#ffffff' }, smooth: true }
         ]
     };
 
